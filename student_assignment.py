@@ -37,4 +37,55 @@ def hw02_1(q1_pdf):
     # pass
 
 def hw02_2(q2_pdf):
-    pass
+
+    # Read PDF text
+    loader = PyPDFLoader(q2_pdf)
+    doc2 = loader.load()
+    
+    # Merge all pages' text
+    full_text = "\n".join([doc.page_content for doc in doc2])
+
+    # Find text before ch.1 (Introduction)
+    intro_pattern = r"^(.*?)(第\s+[一二三四五六七八九十百零]+\s*章)"
+    intro_match = re.match(intro_pattern, full_text, re.DOTALL)
+
+    # Process Introduction if exists
+    intro_text = intro_match.group(1).strip() if intro_match else ""
+    full_text_wo_intro = full_text[len(intro_text):]  
+
+    # Avoid tuple problem by using re.finditer()
+    chapter_and_article_pattern = r"(第\s+[一二三四五六七八九十百零]+\s*章|第\s*\d+(-\d+)?\s*條)"
+    matches = [m.group(0) for m in re.finditer(chapter_and_article_pattern + r"[\s\S]*?(?=" + chapter_and_article_pattern + r"|$)", full_text_wo_intro)]
+
+    # Merge all matched chapters and articles
+    combined_sections = [s.strip() for s in matches]
+
+    # Split further with RecursiveCharacterTextSplitter
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=2000,  # fix chunk_size
+        chunk_overlap=0   # Avoid chunk overlap
+    )
+
+    # Split text into chunks
+    chunks = []
+    if intro_text:  # Insert introduction text if exists
+        chunks.append(intro_text)
+    
+    for section in combined_sections:
+        chunks.extend(splitter.split_text(section))
+
+    # Print chunks
+    for i, chunk in enumerate(chunks):
+        print(f"Chunk {i+1}:\n{chunk}\n")
+
+    print(f"Successfully split into {len(chunks)} chunks.")
+
+    return len(chunks)
+    # pass
+
+
+if __name__ == '__main__':
+    result1 = hw02_1(q1_pdf)
+    result2 = hw02_2(q2_pdf)
+    # print(result1)
+    print(result2) # 111
